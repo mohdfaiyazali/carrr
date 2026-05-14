@@ -1,7 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.mail import send_mail
 from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import CreateView, ListView, UpdateView
@@ -13,6 +12,11 @@ from apps.bookings.services import has_driver_overlap
 from apps.bookings.status_services import apply_booking_state
 from apps.cars.models import Car
 from apps.core.mixins import ManagerRequiredMixin
+from apps.notifications.services import (
+    notify_customer_booking_created,
+    notify_customer_booking_status_changed,
+    notify_managers_booking_alert,
+)
 from apps.users.models import User
 
 
@@ -49,13 +53,8 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         booking.driver_amount = form.cleaned_data["driver_amount"]
         booking.total_amount = form.cleaned_data["total_amount"]
         booking.save()
-        send_mail(
-            subject="Booking created",
-            message=f"Your booking #{booking.id} was created successfully.",
-            from_email="noreply@carz.local",
-            recipient_list=[self.request.user.email] if self.request.user.email else [],
-            fail_silently=True,
-        )
+        notify_customer_booking_created(booking)
+        notify_managers_booking_alert(booking, action="created")
         messages.success(self.request, "Booking created successfully.")
         return redirect("booking-history")
 
@@ -89,6 +88,8 @@ class ManagerBookingListView(ManagerRequiredMixin, ListView):
 def _manager_update_booking_status(request, booking_id, status):
     booking = get_object_or_404(Booking, id=booking_id)
     apply_booking_state(booking, status)
+    notify_customer_booking_status_changed(booking)
+    notify_managers_booking_alert(booking, action=status)
     messages.success(request, f"Booking #{booking.id} updated to {status}.")
     return redirect("manager-booking-list")
 
@@ -128,13 +129,8 @@ def customer_booking_cancel(request, booking_id):
         messages.error(request, "This booking cannot be cancelled.")
         return redirect("booking-history")
     apply_booking_state(booking, Booking.Status.CANCELLED)
-    send_mail(
-        subject="Booking cancelled",
-        message=f"Your booking #{booking.id} has been cancelled.",
-        from_email="noreply@carz.local",
-        recipient_list=[request.user.email] if request.user.email else [],
-        fail_silently=True,
-    )
+    notify_customer_booking_status_changed(booking)
+    notify_managers_booking_alert(booking, action="cancelled")
     messages.success(request, f"Booking #{booking.id} cancelled.")
     return redirect("booking-history")
 
@@ -156,5 +152,7 @@ class ManagerBookingApproveView(ManagerRequiredMixin, UpdateView):
             return self.form_invalid(form)
         booking.save(update_fields=["driver"])
         apply_booking_state(booking, Booking.Status.CONFIRMED)
+        notify_customer_booking_status_changed(booking)
+        notify_managers_booking_alert(booking, action="confirmed")
         messages.success(self.request, f"Booking #{booking.id} approved.")
         return redirect("manager-booking-list")
