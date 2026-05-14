@@ -5,6 +5,7 @@
 <div class="border p-2 mb-2">
   #{{ booking.id }} - {{ booking.customer.username }} - {{ booking.car }} - {{ booking.status }}
   <a class="btn btn-sm btn-outline-success" href="{% url 'manager-booking-approve' booking.id %}">Approve</a>
+  <a class="btn btn-sm btn-outline-primary" href="{% url 'manager-booking-start' booking.id %}">Start Trip</a>
   <a class="btn btn-sm btn-outline-warning" href="{% url 'manager-booking-complete' booking.id %}">Complete</a>
   <a class="btn btn-sm btn-outline-danger" href="{% url 'manager-booking-reject' booking.id %}">Reject</a>
 </div>

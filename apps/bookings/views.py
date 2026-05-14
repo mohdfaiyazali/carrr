@@ -101,6 +101,12 @@ def manager_booking_complete(request, booking_id):
 
 
 @login_required
+@user_passes_test(_is_manager)
+def manager_booking_start(request, booking_id):
+    return _manager_update_booking_status(request, booking_id, Booking.Status.ONGOING)
+
+
+@login_required
 def customer_booking_cancel(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id, customer=request.user)
     if booking.status in [Booking.Status.COMPLETED, Booking.Status.CANCELLED]:

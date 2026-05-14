@@ -8,6 +8,7 @@ from apps.bookings.views import (
     customer_booking_cancel,
     manager_booking_complete,
     manager_booking_reject,
+    manager_booking_start,
 )
 
 urlpatterns = [
@@ -16,6 +17,7 @@ urlpatterns = [
     path("<int:booking_id>/cancel/", customer_booking_cancel, name="booking-cancel"),
     path("manager/bookings/", ManagerBookingListView.as_view(), name="manager-booking-list"),
     path("manager/bookings/<int:booking_id>/approve/", ManagerBookingApproveView.as_view(), name="manager-booking-approve"),
+    path("manager/bookings/<int:booking_id>/start/", manager_booking_start, name="manager-booking-start"),
     path("manager/bookings/<int:booking_id>/reject/", manager_booking_reject, name="manager-booking-reject"),
     path("manager/bookings/<int:booking_id>/complete/", manager_booking_complete, name="manager-booking-complete"),
 ]
