@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3">Manage Drivers</h1>
+<a href="{% url 'manager-driver-create' %}" class="btn btn-primary btn-sm mb-3">Add Driver</a>
+{% for driver in drivers %}
+<div class="border p-2 mb-2">
+  {{ driver.name }} - {{ driver.status }}
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'manager-driver-update' driver.id %}">Edit</a>
+  <a class="btn btn-sm btn-outline-danger" href="{% url 'manager-driver-delete' driver.id %}">Delete</a>
+</div>
+{% endfor %}
+{% endblock %}

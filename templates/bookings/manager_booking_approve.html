@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h4">Approve Booking #{{ object.id }}</h1>
+<p>{{ object.customer.username }} | {{ object.car }}</p>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button class="btn btn-success" type="submit">Approve</button>
+</form>
+{% endblock %}

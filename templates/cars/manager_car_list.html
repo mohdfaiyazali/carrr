@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3">Manage Cars</h1>
+<a href="{% url 'manager-car-create' %}" class="btn btn-primary btn-sm mb-3">Add Car</a>
+{% for car in cars %}
+<div class="border p-2 mb-2">
+  {{ car.brand }} {{ car.model }} ({{ car.status }})
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'manager-car-update' car.id %}">Edit</a>
+  <a class="btn btn-sm btn-outline-danger" href="{% url 'manager-car-delete' car.id %}">Delete</a>
+</div>
+{% endfor %}
+{% endblock %}

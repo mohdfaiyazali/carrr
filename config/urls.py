@@ -23,8 +23,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('apps.core.urls')),
     path('cars/', include('apps.cars.urls')),
+    path('', include('apps.drivers.urls')),
     path('bookings/', include('apps.bookings.urls')),
-    path('accounts/', include('django.contrib.auth.urls')),
+    path('', include('apps.dashboard.urls')),
+    path('accounts/', include('apps.users.urls')),
 ]
 
 if settings.DEBUG:

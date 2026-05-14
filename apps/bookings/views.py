@@ -1,12 +1,17 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404, redirect
-from django.views.generic import CreateView, ListView
+from django.views.generic import CreateView, ListView, UpdateView
 
 from apps.bookings.forms import BookingCreateForm
+from apps.bookings.manager_forms import BookingApprovalForm
 from apps.bookings.models import Booking
+from apps.bookings.status_services import apply_booking_state
 from apps.cars.models import Car
+from apps.core.mixins import ManagerRequiredMixin
+from apps.users.models import User
 
 
 class BookingCreateView(LoginRequiredMixin, CreateView):
@@ -54,3 +59,59 @@ class BookingHistoryView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Booking.objects.select_related("car", "driver").filter(customer=self.request.user).order_by("-created_at")
+
+
+class ManagerBookingListView(ManagerRequiredMixin, ListView):
+    model = Booking
+    template_name = "bookings/manager_booking_list.html"
+    context_object_name = "bookings"
+
+    def get_queryset(self):
+        return Booking.objects.select_related("customer", "car", "driver").order_by("-created_at")
+
+
+def _manager_update_booking_status(request, booking_id, status):
+    booking = get_object_or_404(Booking, id=booking_id)
+    apply_booking_state(booking, status)
+    messages.success(request, f"Booking #{booking.id} updated to {status}.")
+    return redirect("manager-booking-list")
+
+
+def _is_manager(user):
+    return user.is_authenticated and (user.role in [User.Role.MANAGER, User.Role.ADMIN] or user.is_superuser)
+
+
+@login_required
+@user_passes_test(_is_manager)
+def manager_booking_approve(request, booking_id):
+    return _manager_update_booking_status(request, booking_id, Booking.Status.CONFIRMED)
+
+
+@login_required
+@user_passes_test(_is_manager)
+def manager_booking_reject(request, booking_id):
+    return _manager_update_booking_status(request, booking_id, Booking.Status.CANCELLED)
+
+
+@login_required
+@user_passes_test(_is_manager)
+def manager_booking_complete(request, booking_id):
+    return _manager_update_booking_status(request, booking_id, Booking.Status.COMPLETED)
+
+
+class ManagerBookingApproveView(ManagerRequiredMixin, UpdateView):
+    model = Booking
+    form_class = BookingApprovalForm
+    pk_url_kwarg = "booking_id"
+    template_name = "bookings/manager_booking_approve.html"
+    success_url = "/bookings/manager/bookings/"
+
+    def form_valid(self, form):
+        booking = form.save(commit=False)
+        if booking.booking_type == Booking.BookingType.WITH_DRIVER and not booking.driver:
+            form.add_error("driver", "Driver is required for with-driver booking.")
+            return self.form_invalid(form)
+        booking.save(update_fields=["driver"])
+        apply_booking_state(booking, Booking.Status.CONFIRMED)
+        messages.success(self.request, f"Booking #{booking.id} approved.")
+        return redirect("manager-booking-list")
