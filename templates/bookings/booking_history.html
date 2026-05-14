@@ -9,6 +9,9 @@
     {% if booking.status != 'cancelled' and booking.status != 'completed' %}
     <br><a href="{% url 'booking-cancel' booking.id %}" class="btn btn-sm btn-outline-danger mt-2">Cancel Booking</a>
     {% endif %}
+    {% if booking.status == 'completed' and not booking.review %}
+    <br><a href="{% url 'review-create' booking.id %}" class="btn btn-sm btn-outline-primary mt-2">Add Review</a>
+    {% endif %}
   </div>
 {% empty %}<p>No bookings yet.</p>{% endfor %}
 {% endblock %}

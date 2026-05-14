@@ -5,4 +5,15 @@
 <p>{{ car.description }}</p>
 <p>Hourly: Rs. {{ car.pricing.hourly_rate }} | 12h: Rs. {{ car.pricing.half_day_rate }} | 24h: Rs. {{ car.pricing.full_day_rate }}</p>
 <a href="{% url 'booking-create' car.id %}" class="btn btn-primary">Book this car</a>
+<hr>
+<h2 class="h5">Ratings & Reviews</h2>
+<p>Average Rating: {% if average_rating %}{{ average_rating|floatformat:1 }}/5{% else %}No ratings yet{% endif %}</p>
+{% for review in reviews %}
+  <div class="border p-2 mb-2">
+    <strong>{{ review.customer.username }}</strong> - {{ review.rating }}/5
+    <br>{{ review.comment|default:"No comment" }}
+  </div>
+{% empty %}
+  <p>No reviews yet.</p>
+{% endfor %}
 {% endblock %}

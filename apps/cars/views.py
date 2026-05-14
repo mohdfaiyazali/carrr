@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db.models import Avg
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
@@ -32,6 +33,13 @@ class CarDetailView(DetailView):
     template_name = "cars/car_detail.html"
     model = Car
     context_object_name = "car"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        car = self.object
+        context["reviews"] = car.reviews.select_related("customer").order_by("-created_at")[:10]
+        context["average_rating"] = car.reviews.aggregate(avg=Avg("rating"))["avg"]
+        return context
 
 
 class ManagerCarListView(ManagerRequiredMixin, ListView):

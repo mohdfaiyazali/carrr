@@ -25,6 +25,7 @@ urlpatterns = [
     path('cars/', include('apps.cars.urls')),
     path('', include('apps.drivers.urls')),
     path('bookings/', include('apps.bookings.urls')),
+    path('', include('apps.reviews.urls')),
     path('', include('apps.dashboard.urls')),
     path('accounts/', include('apps.users.urls')),
 ]

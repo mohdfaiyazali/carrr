@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import send_mail
+from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import CreateView, ListView, UpdateView
 
@@ -27,6 +28,17 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["car"] = self.car
+        if self.request.method == "GET":
+            initial = kwargs.get("initial", {})
+            start_raw = self.request.GET.get("start")
+            end_raw = self.request.GET.get("end")
+            start_dt = parse_datetime(start_raw) if start_raw else None
+            end_dt = parse_datetime(end_raw) if end_raw else None
+            if start_dt:
+                initial["start_datetime"] = start_dt
+            if end_dt:
+                initial["end_datetime"] = end_dt
+            kwargs["initial"] = initial
         return kwargs
 
     def form_valid(self, form):
