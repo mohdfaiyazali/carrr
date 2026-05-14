@@ -6,4 +6,24 @@
   {{ form.as_p }}
   <button type="submit" class="btn btn-success">Confirm Booking</button>
 </form>
+{% if alternative_slots %}
+  <hr>
+  <h2 class="h5">Alternative Time Slots</h2>
+  <ul>
+    {% for slot in alternative_slots %}
+      <li>{{ slot.0 }} to {{ slot.1 }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+{% if similar_available_cars %}
+  <h2 class="h5">Similar Available Cars</h2>
+  <ul>
+    {% for similar_car in similar_available_cars %}
+      <li>
+        {{ similar_car.brand }} {{ similar_car.model }} ({{ similar_car.fuel_type }}, {{ similar_car.seating_capacity }} seats)
+        <a href="{% url 'booking-create' similar_car.id %}" class="btn btn-sm btn-outline-primary ms-2">Book</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
 {% endblock %}

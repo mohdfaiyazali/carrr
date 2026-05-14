@@ -4,7 +4,13 @@ from django import forms
 from django.utils import timezone
 
 from apps.bookings.models import Booking
-from apps.bookings.services import calculate_car_charge, calculate_duration_hours, has_booking_overlap
+from apps.bookings.services import (
+    calculate_car_charge,
+    calculate_duration_hours,
+    has_booking_overlap,
+    suggest_alternative_slots,
+    suggest_similar_available_cars,
+)
 from apps.drivers.models import Driver
 
 
@@ -21,6 +27,8 @@ class BookingCreateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.car = kwargs.pop("car")
+        self.alternative_slots = []
+        self.similar_available_cars = []
         super().__init__(*args, **kwargs)
         self.fields["driver"].queryset = Driver.objects.filter(status=Driver.Status.AVAILABLE, is_active=True)
         self.fields["driver"].required = False
@@ -40,6 +48,8 @@ class BookingCreateForm(forms.ModelForm):
         if booking_type == Booking.BookingType.WITH_DRIVER and not driver:
             raise forms.ValidationError("Please choose a driver.")
         if has_booking_overlap(self.car, start_dt, end_dt):
+            self.alternative_slots = suggest_alternative_slots(self.car, start_dt, end_dt)
+            self.similar_available_cars = suggest_similar_available_cars(self.car, start_dt, end_dt)
             raise forms.ValidationError("This car is already booked for the selected slot.")
 
         duration_hours = calculate_duration_hours(start_dt, end_dt)

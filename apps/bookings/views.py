@@ -50,6 +50,9 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["car"] = self.car
+        form = context.get("form")
+        context["alternative_slots"] = getattr(form, "alternative_slots", [])
+        context["similar_available_cars"] = getattr(form, "similar_available_cars", [])
         return context
 
 
