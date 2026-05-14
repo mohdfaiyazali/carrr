@@ -1,0 +1,8 @@
+Booking alert ({{ action }}):
+
+Booking #{{ booking.id }}
+Customer: {{ customer.username }}
+Car: {{ car.brand }} {{ car.model }}
+Status: {{ booking.status }}
+From: {{ booking.start_datetime }}
+To: {{ booking.end_datetime }}

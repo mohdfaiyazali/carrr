@@ -1,0 +1,5 @@
+Your booking #{{ booking.id }} status changed to: {{ booking.status }}.
+
+Car: {{ car.brand }} {{ car.model }}
+From: {{ booking.start_datetime }}
+To: {{ booking.end_datetime }}

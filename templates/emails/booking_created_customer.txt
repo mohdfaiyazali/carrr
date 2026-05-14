@@ -1,0 +1,6 @@
+Booking #{{ booking.id }} created successfully.
+
+Car: {{ car.brand }} {{ car.model }}
+From: {{ booking.start_datetime }}
+To: {{ booking.end_datetime }}
+Total: Rs. {{ booking.total_amount }}
