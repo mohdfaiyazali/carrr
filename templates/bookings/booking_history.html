@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3 mb-3">My Bookings</h1>
+{% for booking in bookings %}
+  <div class="border p-3 mb-2">
+    #{{ booking.id }} - {{ booking.car.brand }} {{ booking.car.model }}
+    <br>{{ booking.start_datetime }} to {{ booking.end_datetime }}
+    <br>Status: {{ booking.status }} | Total: Rs. {{ booking.total_amount }}
+  </div>
+{% empty %}<p>No bookings yet.</p>{% endfor %}
+{% endblock %}

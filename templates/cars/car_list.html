@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3 mb-3">Cars</h1>
+{% for car in cars %}
+  <div class="border p-3 mb-2">
+    <strong>{{ car.brand }} {{ car.model }}</strong> - {{ car.fuel_type }} - Rs. {{ car.pricing.hourly_rate }}/hr
+    <a href="{% url 'car-detail' car.id %}" class="btn btn-outline-primary btn-sm ms-2">Details</a>
+  </div>
+{% empty %}<p>No cars found.</p>{% endfor %}
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3">{{ car.brand }} {{ car.model }}</h1>
+<p>{{ car.year }} | {{ car.color }} | {{ car.fuel_type }} | {{ car.transmission }}</p>
+<p>{{ car.description }}</p>
+<p>Hourly: Rs. {{ car.pricing.hourly_rate }} | 12h: Rs. {{ car.pricing.half_day_rate }} | 24h: Rs. {{ car.pricing.full_day_rate }}</p>
+<a href="{% url 'booking-create' car.id %}" class="btn btn-primary">Book this car</a>
+{% endblock %}
