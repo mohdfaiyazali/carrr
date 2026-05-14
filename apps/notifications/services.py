@@ -60,3 +60,27 @@ def notify_managers_booking_alert(booking, action="created"):
     context = {"booking": booking, "action": action, "customer": booking.customer, "car": booking.car}
     for manager in managers:
         _send_logged_email(manager.email, subject, "booking_manager_alert", context)
+
+
+def retry_email_log(email_log):
+    try:
+        text_body = render_to_string(f"emails/{email_log.template_key}.txt", {})
+    except Exception:
+        text_body = f"This is a retry notification for: {email_log.subject}"
+    try:
+        message = EmailMultiAlternatives(
+            subject=email_log.subject,
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@carz.local"),
+            to=[email_log.to_email],
+            body=text_body,
+        )
+        message.send(fail_silently=False)
+        email_log.status = EmailLog.Status.SENT
+        email_log.error_message = ""
+        email_log.save(update_fields=["status", "error_message"])
+        return True
+    except Exception as exc:
+        email_log.status = EmailLog.Status.FAILED
+        email_log.error_message = str(exc)
+        email_log.save(update_fields=["status", "error_message"])
+        return False
