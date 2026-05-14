@@ -8,6 +8,7 @@ from django.views.generic import CreateView, ListView, UpdateView
 from apps.bookings.forms import BookingCreateForm
 from apps.bookings.manager_forms import BookingApprovalForm
 from apps.bookings.models import Booking
+from apps.bookings.services import has_driver_overlap
 from apps.bookings.status_services import apply_booking_state
 from apps.cars.models import Car
 from apps.core.mixins import ManagerRequiredMixin
@@ -99,6 +100,24 @@ def manager_booking_complete(request, booking_id):
     return _manager_update_booking_status(request, booking_id, Booking.Status.COMPLETED)
 
 
+@login_required
+def customer_booking_cancel(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, customer=request.user)
+    if booking.status in [Booking.Status.COMPLETED, Booking.Status.CANCELLED]:
+        messages.error(request, "This booking cannot be cancelled.")
+        return redirect("booking-history")
+    apply_booking_state(booking, Booking.Status.CANCELLED)
+    send_mail(
+        subject="Booking cancelled",
+        message=f"Your booking #{booking.id} has been cancelled.",
+        from_email="noreply@carz.local",
+        recipient_list=[request.user.email] if request.user.email else [],
+        fail_silently=True,
+    )
+    messages.success(request, f"Booking #{booking.id} cancelled.")
+    return redirect("booking-history")
+
+
 class ManagerBookingApproveView(ManagerRequiredMixin, UpdateView):
     model = Booking
     form_class = BookingApprovalForm
@@ -110,6 +129,9 @@ class ManagerBookingApproveView(ManagerRequiredMixin, UpdateView):
         booking = form.save(commit=False)
         if booking.booking_type == Booking.BookingType.WITH_DRIVER and not booking.driver:
             form.add_error("driver", "Driver is required for with-driver booking.")
+            return self.form_invalid(form)
+        if booking.driver and has_driver_overlap(booking.driver, booking.start_datetime, booking.end_datetime, exclude_booking_id=booking.id):
+            form.add_error("driver", "Selected driver is already assigned in this time slot.")
             return self.form_invalid(form)
         booking.save(update_fields=["driver"])
         apply_booking_state(booking, Booking.Status.CONFIRMED)

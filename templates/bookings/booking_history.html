@@ -6,6 +6,9 @@
     #{{ booking.id }} - {{ booking.car.brand }} {{ booking.car.model }}
     <br>{{ booking.start_datetime }} to {{ booking.end_datetime }}
     <br>Status: {{ booking.status }} | Total: Rs. {{ booking.total_amount }}
+    {% if booking.status != 'cancelled' and booking.status != 'completed' %}
+    <br><a href="{% url 'booking-cancel' booking.id %}" class="btn btn-sm btn-outline-danger mt-2">Cancel Booking</a>
+    {% endif %}
   </div>
 {% empty %}<p>No bookings yet.</p>{% endfor %}
 {% endblock %}

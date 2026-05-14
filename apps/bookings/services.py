@@ -16,6 +16,18 @@ def has_booking_overlap(car, start_dt, end_dt, exclude_booking_id=None):
     return qs.exists()
 
 
+def has_driver_overlap(driver, start_dt, end_dt, exclude_booking_id=None):
+    qs = Booking.objects.filter(
+        driver=driver,
+        status__in=[Booking.Status.PENDING, Booking.Status.CONFIRMED, Booking.Status.ONGOING],
+        start_datetime__lt=end_dt,
+        end_datetime__gt=start_dt,
+    )
+    if exclude_booking_id:
+        qs = qs.exclude(id=exclude_booking_id)
+    return qs.exists()
+
+
 def calculate_duration_hours(start_dt, end_dt):
     delta: timedelta = end_dt - start_dt
     return Decimal(delta.total_seconds()) / Decimal("3600")
