@@ -4,8 +4,8 @@ from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
-from apps.cars.forms import CarForm, CarPricingForm
-from apps.cars.models import Car
+from apps.cars.forms import CarForm, CarImageUploadForm, CarPricingForm
+from apps.cars.models import Car, CarImage
 from apps.core.mixins import ManagerRequiredMixin
 
 
@@ -20,12 +20,27 @@ class CarListView(ListView):
         brand = self.request.GET.get("brand")
         model = self.request.GET.get("model")
         fuel_type = self.request.GET.get("fuel_type")
+        seating_capacity = self.request.GET.get("seating_capacity")
+        driver_available = self.request.GET.get("driver_available")
+        min_price = self.request.GET.get("min_price")
+        max_price = self.request.GET.get("max_price")
+        exact_price = self.request.GET.get("price")
         if brand:
             qs = qs.filter(brand__icontains=brand)
         if model:
             qs = qs.filter(model__icontains=model)
         if fuel_type:
             qs = qs.filter(fuel_type=fuel_type)
+        if seating_capacity:
+            qs = qs.filter(seating_capacity=seating_capacity)
+        if driver_available in ["true", "false"]:
+            qs = qs.filter(is_driver_available=(driver_available == "true"))
+        if exact_price:
+            qs = qs.filter(pricing__hourly_rate=exact_price)
+        if min_price:
+            qs = qs.filter(pricing__hourly_rate__gte=min_price)
+        if max_price:
+            qs = qs.filter(pricing__hourly_rate__lte=max_price)
         return qs
 
 
@@ -57,17 +72,21 @@ class ManagerCarCreateView(ManagerRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["pricing_form"] = context.get("pricing_form") or CarPricingForm(self.request.POST or None)
+        context["image_form"] = context.get("image_form") or CarImageUploadForm(self.request.POST or None, self.request.FILES or None)
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         pricing_form = context["pricing_form"]
-        if not pricing_form.is_valid():
+        image_form = context["image_form"]
+        if not pricing_form.is_valid() or not image_form.is_valid():
             return self.form_invalid(form)
         self.object = form.save()
         pricing = pricing_form.save(commit=False)
         pricing.car = self.object
         pricing.save()
+        for img in image_form.cleaned_data.get("images", []):
+            CarImage.objects.create(car=self.object, image=img)
         messages.success(self.request, "Car created.")
         return redirect(self.success_url)
 
@@ -82,17 +101,21 @@ class ManagerCarUpdateView(ManagerRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         pricing_instance = getattr(self.object, "pricing", None)
         context["pricing_form"] = context.get("pricing_form") or CarPricingForm(self.request.POST or None, instance=pricing_instance)
+        context["image_form"] = context.get("image_form") or CarImageUploadForm(self.request.POST or None, self.request.FILES or None)
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         pricing_form = context["pricing_form"]
-        if not pricing_form.is_valid():
+        image_form = context["image_form"]
+        if not pricing_form.is_valid() or not image_form.is_valid():
             return self.form_invalid(form)
         self.object = form.save()
         pricing = pricing_form.save(commit=False)
         pricing.car = self.object
         pricing.save()
+        for img in image_form.cleaned_data.get("images", []):
+            CarImage.objects.create(car=self.object, image=img)
         messages.success(self.request, "Car updated.")
         return redirect(self.success_url)
 

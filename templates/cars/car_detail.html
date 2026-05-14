@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
 <h1 class="h3">{{ car.brand }} {{ car.model }}</h1>
+{% if car.images.all %}
+<div class="row g-2 mb-3">
+  {% for car_image in car.images.all %}
+    <div class="col-md-3 col-6">
+      <img src="{{ car_image.image.url }}" alt="{{ car }}" class="img-fluid rounded border">
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
 <p>{{ car.year }} | {{ car.color }} | {{ car.fuel_type }} | {{ car.transmission }}</p>
 <p>{{ car.description }}</p>
 <p>Hourly: Rs. {{ car.pricing.hourly_rate }} | 12h: Rs. {{ car.pricing.half_day_rate }} | 24h: Rs. {{ car.pricing.full_day_rate }}</p>

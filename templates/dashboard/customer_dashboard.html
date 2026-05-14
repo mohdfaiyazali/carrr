@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3">My Dashboard</h1>
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="border p-3">Total Bookings: {{ total_bookings }}</div></div>
+  <div class="col-md-3"><div class="border p-3">Active Bookings: {{ active_bookings }}</div></div>
+  <div class="col-md-3"><div class="border p-3">Completed Bookings: {{ completed_bookings }}</div></div>
+  <div class="col-md-3"><div class="border p-3">Total Spend: Rs. {{ total_spend }}</div></div>
+</div>
+<div class="mb-3">
+  <a class="btn btn-sm btn-primary" href="{% url 'car-list' %}">Browse Cars</a>
+  <a class="btn btn-sm btn-outline-primary" href="{% url 'booking-history' %}">My Bookings</a>
+</div>
+<h2 class="h5">Recent Bookings</h2>
+{% for booking in recent_bookings %}
+  <div class="border p-2 mb-2">
+    #{{ booking.id }} - {{ booking.car.brand }} {{ booking.car.model }}
+    <br>{{ booking.start_datetime }} to {{ booking.end_datetime }}
+    <br>Status: {{ booking.status }} | Total: Rs. {{ booking.total_amount }}
+  </div>
+{% empty %}
+  <p>No bookings yet.</p>
+{% endfor %}
+{% endblock %}

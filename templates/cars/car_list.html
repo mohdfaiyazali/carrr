@@ -1,9 +1,37 @@
 {% extends "base.html" %}
 {% block content %}
 <h1 class="h3 mb-3">Cars</h1>
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-2"><input class="form-control" type="text" name="brand" placeholder="Brand" value="{{ request.GET.brand }}"></div>
+  <div class="col-md-2"><input class="form-control" type="text" name="model" placeholder="Model" value="{{ request.GET.model }}"></div>
+  <div class="col-md-2">
+    <select class="form-select" name="fuel_type">
+      <option value="">Fuel</option>
+      <option value="petrol" {% if request.GET.fuel_type == 'petrol' %}selected{% endif %}>Petrol</option>
+      <option value="diesel" {% if request.GET.fuel_type == 'diesel' %}selected{% endif %}>Diesel</option>
+      <option value="cng" {% if request.GET.fuel_type == 'cng' %}selected{% endif %}>CNG</option>
+      <option value="electric" {% if request.GET.fuel_type == 'electric' %}selected{% endif %}>Electric</option>
+    </select>
+  </div>
+  <div class="col-md-2"><input class="form-control" type="number" name="seating_capacity" placeholder="Seats" value="{{ request.GET.seating_capacity }}"></div>
+  <div class="col-md-2">
+    <select class="form-select" name="driver_available">
+      <option value="">Driver</option>
+      <option value="true" {% if request.GET.driver_available == 'true' %}selected{% endif %}>With Driver</option>
+      <option value="false" {% if request.GET.driver_available == 'false' %}selected{% endif %}>Self Drive</option>
+    </select>
+  </div>
+  <div class="col-md-2"><input class="form-control" type="number" step="0.01" name="price" placeholder="Exact Price/hr" value="{{ request.GET.price }}"></div>
+  <div class="col-md-2"><input class="form-control" type="number" step="0.01" name="min_price" placeholder="Min Price/hr" value="{{ request.GET.min_price }}"></div>
+  <div class="col-md-2"><input class="form-control" type="number" step="0.01" name="max_price" placeholder="Max Price/hr" value="{{ request.GET.max_price }}"></div>
+  <div class="col-md-3">
+    <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'car-list' %}">Reset</a>
+  </div>
+</form>
 {% for car in cars %}
   <div class="border p-3 mb-2">
-    <strong>{{ car.brand }} {{ car.model }}</strong> - {{ car.fuel_type }} - Rs. {{ car.pricing.hourly_rate }}/hr
+    <strong>{{ car.brand }} {{ car.model }}</strong> - {{ car.fuel_type }} - {{ car.seating_capacity }} seats - Rs. {{ car.pricing.hourly_rate }}/hr
     <a href="{% url 'car-detail' car.id %}" class="btn btn-outline-primary btn-sm ms-2">Details</a>
   </div>
 {% empty %}<p>No cars found.</p>{% endfor %}
