@@ -69,13 +69,13 @@ class CarDetailView(DetailView):
         ).order_by("start_datetime")
         context["blocked_bookings"] = blocked_bookings
 
-        duration_hours = self.request.GET.get("duration_hours", "4")
+        duration_hours = self.request.GET.get("duration_hours", str(Booking.MIN_BOOKING_HOURS))
         try:
             duration_hours_int = int(duration_hours)
         except (TypeError, ValueError):
-            duration_hours_int = 4
-        if duration_hours_int < 1:
-            duration_hours_int = 1
+            duration_hours_int = Booking.MIN_BOOKING_HOURS
+        if duration_hours_int < Booking.MIN_BOOKING_HOURS:
+            duration_hours_int = Booking.MIN_BOOKING_HOURS
         if duration_hours_int > 72:
             duration_hours_int = 72
         desired_start = now

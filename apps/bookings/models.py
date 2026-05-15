@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -7,6 +9,7 @@ from apps.drivers.models import Driver
 
 
 class Booking(models.Model):
+    MIN_BOOKING_HOURS = 6
     class BookingType(models.TextChoices):
         SELF_DRIVE = "self_drive", "Self Drive"
         WITH_DRIVER = "with_driver", "With Driver"
@@ -33,6 +36,10 @@ class Booking(models.Model):
     def clean(self):
         if self.end_datetime <= self.start_datetime:
             raise ValidationError("End datetime must be after start datetime.")
+        duration = self.end_datetime - self.start_datetime
+        min_duration = timedelta(hours=self.MIN_BOOKING_HOURS)
+        if duration < min_duration:
+            raise ValidationError(f"Minimum booking duration is {self.MIN_BOOKING_HOURS} hours.")
         if self.booking_type == self.BookingType.WITH_DRIVER and not self.driver:
             raise ValidationError("Driver is required for with-driver bookings.")
 

@@ -35,7 +35,7 @@ class BookingFlowTests(TestCase):
     def test_customer_can_create_booking(self):
         self.client.login(username="cust1", password="Pass@12345")
         start = timezone.now() + timedelta(days=1)
-        end = start + timedelta(hours=5)
+        end = start + timedelta(hours=6)
         resp = self.client.post(reverse("booking-create", kwargs={"car_id": self.car.id}), {
             "start_datetime": start.strftime("%Y-%m-%dT%H:%M"),
             "end_datetime": end.strftime("%Y-%m-%dT%H:%M"),
@@ -44,12 +44,25 @@ class BookingFlowTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(Booking.objects.count(), 1)
 
+    def test_customer_cannot_create_booking_less_than_6_hours(self):
+        self.client.login(username="cust1", password="Pass@12345")
+        start = timezone.now() + timedelta(days=1)
+        end = start + timedelta(hours=5)
+        resp = self.client.post(reverse("booking-create", kwargs={"car_id": self.car.id}), {
+            "start_datetime": start.strftime("%Y-%m-%dT%H:%M"),
+            "end_datetime": end.strftime("%Y-%m-%dT%H:%M"),
+            "booking_type": Booking.BookingType.SELF_DRIVE,
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Minimum booking duration is 6 hours.")
+        self.assertEqual(Booking.objects.count(), 0)
+
     def test_manager_can_mark_ongoing(self):
         booking = Booking.objects.create(
             customer=self.customer,
             car=self.car,
             start_datetime=timezone.now() + timedelta(days=1),
-            end_datetime=timezone.now() + timedelta(days=1, hours=5),
+            end_datetime=timezone.now() + timedelta(days=1, hours=6),
             status=Booking.Status.CONFIRMED,
             total_amount=1000,
         )

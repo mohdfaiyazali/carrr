@@ -46,6 +46,9 @@ class BookingCreateForm(forms.ModelForm):
             raise forms.ValidationError("Start datetime must be in the future.")
         if end_dt <= start_dt:
             raise forms.ValidationError("End datetime must be after start datetime.")
+        duration_hours = calculate_duration_hours(start_dt, end_dt)
+        if duration_hours < Decimal(str(Booking.MIN_BOOKING_HOURS)):
+            raise forms.ValidationError(f"Minimum booking duration is {Booking.MIN_BOOKING_HOURS} hours.")
         if booking_type == Booking.BookingType.WITH_DRIVER and not driver:
             raise forms.ValidationError("Please choose a driver.")
         if has_booking_overlap(self.car, start_dt, end_dt):
@@ -58,7 +61,6 @@ class BookingCreateForm(forms.ModelForm):
         except ObjectDoesNotExist:
             raise forms.ValidationError("This car does not have pricing configured yet. Please contact support.")
 
-        duration_hours = calculate_duration_hours(start_dt, end_dt)
         base_amount = calculate_car_charge(pricing, duration_hours)
         driver_amount = Decimal("0")
         if booking_type == Booking.BookingType.WITH_DRIVER and driver:
