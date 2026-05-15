@@ -15,7 +15,9 @@
       <a class="nav-link" href="/dashboard/">Dashboard</a>
       <a class="nav-link" href="/bookings/my/">My Bookings</a>
       <a class="nav-link" href="/contact/">Contact</a>
+      {% if user.is_authenticated and user.role == 'manager' or user.is_authenticated and user.role == 'admin' or user.is_superuser %}
       <a class="nav-link" href="/manager/dashboard/">Manager Dashboard</a>
+      {% endif %}
     </div>
   </div>
 </nav>

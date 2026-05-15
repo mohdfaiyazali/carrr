@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django import forms
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
 from apps.bookings.models import Booking
@@ -52,8 +53,13 @@ class BookingCreateForm(forms.ModelForm):
             self.similar_available_cars = suggest_similar_available_cars(self.car, start_dt, end_dt)
             raise forms.ValidationError("This car is already booked for the selected slot.")
 
+        try:
+            pricing = self.car.pricing
+        except ObjectDoesNotExist:
+            raise forms.ValidationError("This car does not have pricing configured yet. Please contact support.")
+
         duration_hours = calculate_duration_hours(start_dt, end_dt)
-        base_amount = calculate_car_charge(self.car.pricing, duration_hours)
+        base_amount = calculate_car_charge(pricing, duration_hours)
         driver_amount = Decimal("0")
         if booking_type == Booking.BookingType.WITH_DRIVER and driver:
             driver_amount = driver.driver_hourly_rate * duration_hours
