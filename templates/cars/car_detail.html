@@ -15,6 +15,66 @@
 <p>Hourly: Rs. {{ car.pricing.hourly_rate }} | 12h: Rs. {{ car.pricing.half_day_rate }} | 24h: Rs. {{ car.pricing.full_day_rate }}</p>
 <a href="{% url 'booking-create' car.id %}" class="btn btn-primary">Book this car</a>
 <hr>
+<h2 class="h5">Availability Calendar</h2>
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <a class="btn btn-sm btn-outline-secondary" href="?month={{ calendar_prev_month }}&duration_hours={{ duration_hours }}">Previous</a>
+  <strong>{{ calendar_month_label }}</strong>
+  <a class="btn btn-sm btn-outline-secondary" href="?month={{ calendar_next_month }}&duration_hours={{ duration_hours }}">Next</a>
+</div>
+<table class="table table-bordered text-center align-middle">
+  <thead>
+    <tr>
+      <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for week in calendar_month_grid %}
+      <tr>
+        {% for cell in week %}
+          <td class="
+            {% if not cell.in_month %}text-muted bg-light{% endif %}
+            {% if cell.is_confirmed %}table-danger{% elif cell.is_pending_only %}table-warning{% endif %}
+          ">
+            <div>{{ cell.date.day }}</div>
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<div class="mb-3">
+  <span class="badge text-bg-danger">Booked/Blocked</span>
+  <span class="badge text-bg-warning">Tentative (Pending)</span>
+</div>
+<form method="get" class="row g-2 mb-3">
+  <input type="hidden" name="month" value="{{ request.GET.month }}">
+  <div class="col-md-3">
+    <label class="form-label">Duration (hours)</label>
+    <input class="form-control" type="number" min="1" max="72" name="duration_hours" value="{{ duration_hours }}">
+  </div>
+  <div class="col-md-3 align-self-end">
+    <button class="btn btn-outline-primary" type="submit">Update Suggestions</button>
+  </div>
+</form>
+<p class="mb-2">Blocked/Tentative Slots (next 14 days):</p>
+{% for booking in blocked_bookings %}
+  <div class="border p-2 mb-2">
+    <strong>{{ booking.start_datetime }}</strong> to <strong>{{ booking.end_datetime }}</strong>
+    <span class="badge text-bg-secondary">{{ booking.status|title }}</span>
+  </div>
+{% empty %}
+  <p>No blocked slots in the next 14 days.</p>
+{% endfor %}
+<h3 class="h6 mt-3">Quick Next Available Suggestions</h3>
+{% for slot_start, slot_end in next_available_slots %}
+  <div class="border p-2 mb-2">
+    {{ slot_start }} to {{ slot_end }}
+    <a class="btn btn-sm btn-outline-success ms-2" href="{% url 'booking-create' car.id %}?start={{ slot_start|date:'c' }}&end={{ slot_end|date:'c' }}">Book This Slot</a>
+  </div>
+{% empty %}
+  <p>No suggestions available right now.</p>
+{% endfor %}
+<hr>
 <h2 class="h5">Ratings & Reviews</h2>
 <p>Average Rating: {% if average_rating %}{{ average_rating|floatformat:1 }}/5{% else %}No ratings yet{% endif %}</p>
 {% for review in reviews %}

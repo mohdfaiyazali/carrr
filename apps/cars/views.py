@@ -1,9 +1,15 @@
+from datetime import timedelta
+import calendar
+
 from django.contrib import messages
 from django.db.models import Avg
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
+from apps.bookings.models import Booking
+from apps.bookings.services import suggest_alternative_slots
 from apps.cars.forms import CarForm, CarImageUploadForm, CarPricingForm
 from apps.cars.models import Car, CarImage
 from apps.core.mixins import ManagerRequiredMixin
@@ -54,6 +60,96 @@ class CarDetailView(DetailView):
         car = self.object
         context["reviews"] = car.reviews.select_related("customer").order_by("-created_at")[:10]
         context["average_rating"] = car.reviews.aggregate(avg=Avg("rating"))["avg"]
+        now = timezone.now()
+        range_end = now + timedelta(days=14)
+        blocked_bookings = car.bookings.filter(
+            status__in=[Booking.Status.PENDING, Booking.Status.CONFIRMED, Booking.Status.ONGOING],
+            end_datetime__gt=now,
+            start_datetime__lt=range_end,
+        ).order_by("start_datetime")
+        context["blocked_bookings"] = blocked_bookings
+
+        duration_hours = self.request.GET.get("duration_hours", "4")
+        try:
+            duration_hours_int = int(duration_hours)
+        except (TypeError, ValueError):
+            duration_hours_int = 4
+        if duration_hours_int < 1:
+            duration_hours_int = 1
+        if duration_hours_int > 72:
+            duration_hours_int = 72
+        desired_start = now
+        desired_end = desired_start + timedelta(hours=duration_hours_int)
+        context["duration_hours"] = duration_hours_int
+        context["next_available_slots"] = suggest_alternative_slots(car, desired_start, desired_end, limit=5)
+        month_param = self.request.GET.get("month")
+        today_local = timezone.localdate()
+        if month_param:
+            try:
+                year_str, month_str = month_param.split("-")
+                year = int(year_str)
+                month = int(month_str)
+                display_date = today_local.replace(year=year, month=month, day=1)
+            except (ValueError, TypeError):
+                display_date = today_local.replace(day=1)
+        else:
+            display_date = today_local.replace(day=1)
+
+        cal = calendar.Calendar(firstweekday=0)
+        month_weeks = cal.monthdatescalendar(display_date.year, display_date.month)
+        month_start = timezone.make_aware(
+            timezone.datetime(display_date.year, display_date.month, 1, 0, 0, 0),
+            timezone.get_current_timezone(),
+        )
+        last_day = calendar.monthrange(display_date.year, display_date.month)[1]
+        month_end = timezone.make_aware(
+            timezone.datetime(display_date.year, display_date.month, last_day, 23, 59, 59),
+            timezone.get_current_timezone(),
+        )
+        month_bookings = car.bookings.filter(
+            status__in=[Booking.Status.PENDING, Booking.Status.CONFIRMED, Booking.Status.ONGOING],
+            end_datetime__gte=month_start,
+            start_datetime__lte=month_end,
+        )
+        day_meta = {}
+        for booking in month_bookings:
+            start_date = timezone.localtime(booking.start_datetime).date()
+            end_date = timezone.localtime(booking.end_datetime).date()
+            cursor = max(start_date, display_date.replace(day=1))
+            month_last_date = display_date.replace(day=last_day)
+            while cursor <= min(end_date, month_last_date):
+                key = cursor.isoformat()
+                if key not in day_meta:
+                    day_meta[key] = {"has_confirmed": False, "has_pending": False}
+                if booking.status in [Booking.Status.CONFIRMED, Booking.Status.ONGOING]:
+                    day_meta[key]["has_confirmed"] = True
+                elif booking.status == Booking.Status.PENDING:
+                    day_meta[key]["has_pending"] = True
+                cursor += timedelta(days=1)
+
+        month_grid = []
+        for week in month_weeks:
+            week_cells = []
+            for day in week:
+                key = day.isoformat()
+                meta = day_meta.get(key, {"has_confirmed": False, "has_pending": False})
+                week_cells.append(
+                    {
+                        "date": day,
+                        "in_month": day.month == display_date.month,
+                        "is_today": day == today_local,
+                        "is_confirmed": meta["has_confirmed"],
+                        "is_pending_only": (not meta["has_confirmed"]) and meta["has_pending"],
+                    }
+                )
+            month_grid.append(week_cells)
+
+        prev_month = (display_date.replace(day=1) - timedelta(days=1)).replace(day=1)
+        next_month = (display_date.replace(day=28) + timedelta(days=4)).replace(day=1)
+        context["calendar_month_label"] = display_date.strftime("%B %Y")
+        context["calendar_month_grid"] = month_grid
+        context["calendar_prev_month"] = prev_month.strftime("%Y-%m")
+        context["calendar_next_month"] = next_month.strftime("%Y-%m")
         return context
 
 
