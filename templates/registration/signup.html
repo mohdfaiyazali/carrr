@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <h1 class="h3">Register</h1>
-<form method="post">
+<form method="post" class="card-lux p-3">
   {% csrf_token %}
   {{ form.as_p }}
-  <button class="btn btn-success" type="submit">Create Account</button>
+  <button class="btn btn-lux" type="submit">Create Account</button>
 </form>
 {% endblock %}

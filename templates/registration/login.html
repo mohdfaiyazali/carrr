@@ -1,10 +1,10 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <h1 class="h3">Login</h1>
-<form method="post">
+<form method="post" class="card-lux p-3">
   {% csrf_token %}
   {{ form.as_p }}
-  <button class="btn btn-primary" type="submit">Login</button>
+  <button class="btn btn-lux" type="submit">Login</button>
 </form>
 <p class="mt-2"><a href="{% url 'register' %}">Create account</a></p>
 {% endblock %}

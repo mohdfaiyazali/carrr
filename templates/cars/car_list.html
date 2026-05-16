@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <h1 class="h3 mb-3">Cars</h1>
 <form method="get" class="row g-2 mb-3">
@@ -25,14 +25,20 @@
   <div class="col-md-2"><input class="form-control" type="number" step="0.01" name="min_price" placeholder="Min Price/hr" value="{{ request.GET.min_price }}"></div>
   <div class="col-md-2"><input class="form-control" type="number" step="0.01" name="max_price" placeholder="Max Price/hr" value="{{ request.GET.max_price }}"></div>
   <div class="col-md-3">
-    <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+    <button class="btn btn-lux btn-sm" type="submit">Apply</button>
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'car-list' %}">Reset</a>
   </div>
 </form>
+<div class="row g-3">
 {% for car in cars %}
-  <div class="border p-3 mb-2">
-    <strong>{{ car.brand }} {{ car.model }}</strong> - {{ car.fuel_type }} - {{ car.seating_capacity }} seats - Rs. {{ car.pricing.hourly_rate }}/hr
-    <a href="{% url 'car-detail' car.id %}" class="btn btn-outline-primary btn-sm ms-2">Details</a>
+  <div class="col-md-4">
+    <div class="card-lux p-3 h-100">
+      <strong>{{ car.brand }} {{ car.model }}</strong>
+      <div class="small mt-1 mb-2">{{ car.fuel_type|title }} | {{ car.seating_capacity }} seats</div>
+      <div class="mb-2">Rs. {{ car.pricing.hourly_rate }}/hr</div>
+      <a href="{% url 'car-detail' car.id %}" class="btn btn-outline-lux btn-sm">Details</a>
+    </div>
   </div>
 {% empty %}<p>No cars found.</p>{% endfor %}
+</div>
 {% endblock %}

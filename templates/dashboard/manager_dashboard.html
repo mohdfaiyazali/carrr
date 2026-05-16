@@ -1,11 +1,11 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <h1 class="h3">Manager Dashboard</h1>
 <div class="row g-3 mb-3">
-  <div class="col-md-3"><div class="border p-3">Total Bookings: {{ total_bookings }}</div></div>
-  <div class="col-md-3"><div class="border p-3">Total Cars: {{ total_cars }}</div></div>
-  <div class="col-md-3"><div class="border p-3">Active Users: {{ active_users }}</div></div>
-  <div class="col-md-3"><div class="border p-3">Revenue: Rs. {{ revenue }}</div></div>
+  <div class="col-md-3"><div class="card-clean p-3">Total Bookings: {{ total_bookings }}</div></div>
+  <div class="col-md-3"><div class="card-clean p-3">Total Cars: {{ total_cars }}</div></div>
+  <div class="col-md-3"><div class="card-clean p-3">Active Users: {{ active_users }}</div></div>
+  <div class="col-md-3"><div class="card-clean p-3">Revenue: Rs. {{ revenue }}</div></div>
 </div>
 <a href="{% url 'manager-car-list' %}" class="btn btn-outline-primary btn-sm">Manage Cars</a>
 <a href="{% url 'manager-driver-list' %}" class="btn btn-outline-primary btn-sm">Manage Drivers</a>
