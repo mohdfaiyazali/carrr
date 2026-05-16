@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.db import transaction
+from django.http import HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.dateparse import parse_datetime
@@ -8,6 +10,13 @@ from django.views.generic import CreateView, ListView, UpdateView
 from apps.bookings.forms import BookingCreateForm
 from apps.bookings.manager_forms import BookingApprovalForm
 from apps.bookings.models import Booking
+from apps.bookings.models import BookingPayment
+from apps.bookings.payment_services import (
+    calculate_advance_amount,
+    calculate_cancellation_fee,
+    create_razorpay_order,
+    verify_razorpay_signature,
+)
 from apps.bookings.services import has_driver_overlap
 from apps.bookings.status_services import apply_booking_state
 from apps.cars.models import Car
@@ -46,16 +55,21 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         return kwargs
 
     def form_valid(self, form):
-        booking = form.save(commit=False)
-        booking.customer = self.request.user
-        booking.car = self.car
-        booking.base_amount = form.cleaned_data["base_amount"]
-        booking.driver_amount = form.cleaned_data["driver_amount"]
-        booking.total_amount = form.cleaned_data["total_amount"]
-        booking.save()
+        with transaction.atomic():
+            booking = form.save(commit=False)
+            booking.customer = self.request.user
+            booking.car = self.car
+            booking.base_amount = form.cleaned_data["base_amount"]
+            booking.driver_amount = form.cleaned_data["driver_amount"]
+            booking.total_amount = form.cleaned_data["total_amount"]
+            booking.advance_amount = calculate_advance_amount(booking.total_amount)
+            booking.payment_status = Booking.PaymentStatus.UNPAID
+            booking.save()
+            order_id, _ = create_razorpay_order(booking)
+            BookingPayment.objects.create(booking=booking, razorpay_order_id=order_id, amount=booking.advance_amount)
         notify_customer_booking_created(booking)
         notify_managers_booking_alert(booking, action="created")
-        messages.success(self.request, "Booking created successfully.")
+        messages.success(self.request, "Booking created. Please complete advance payment.")
         return redirect("booking-history")
 
     def get_context_data(self, **kwargs):
@@ -129,9 +143,43 @@ def customer_booking_cancel(request, booking_id):
         messages.error(request, "This booking cannot be cancelled.")
         return redirect("booking-history")
     apply_booking_state(booking, Booking.Status.CANCELLED)
+    if booking.paid_amount > 0:
+        cancellation_fee = calculate_cancellation_fee(booking)
+        refundable = max(booking.paid_amount - cancellation_fee, 0)
+        booking.refund_amount = refundable
+        booking.payment_status = Booking.PaymentStatus.REFUND_PENDING if refundable > 0 else Booking.PaymentStatus.PARTIALLY_PAID
+        booking.save(update_fields=["refund_amount", "payment_status"])
+        if hasattr(booking, "payment") and refundable > 0:
+            booking.payment.status = BookingPayment.Status.REFUND_PENDING
+            booking.payment.refund_reference = f"manual_refund_booking_{booking.id}"
+            booking.payment.save(update_fields=["status", "refund_reference"])
     notify_customer_booking_status_changed(booking)
     notify_managers_booking_alert(booking, action="cancelled")
     messages.success(request, f"Booking #{booking.id} cancelled.")
+    return redirect("booking-history")
+
+
+@login_required
+def booking_payment_success(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, customer=request.user)
+    payment = get_object_or_404(BookingPayment, booking=booking)
+    payment_id = request.POST.get("razorpay_payment_id") or request.GET.get("razorpay_payment_id")
+    signature = request.POST.get("razorpay_signature") or request.GET.get("razorpay_signature")
+    if not payment_id or not signature:
+        return HttpResponseBadRequest("Missing payment parameters.")
+    if not verify_razorpay_signature(payment.razorpay_order_id, payment_id, signature):
+        messages.error(request, "Payment verification failed.")
+        payment.status = BookingPayment.Status.FAILED
+        payment.save(update_fields=["status"])
+        return redirect("booking-history")
+    payment.razorpay_payment_id = payment_id
+    payment.razorpay_signature = signature
+    payment.status = BookingPayment.Status.CAPTURED
+    payment.save(update_fields=["razorpay_payment_id", "razorpay_signature", "status"])
+    booking.paid_amount = booking.advance_amount
+    booking.payment_status = Booking.PaymentStatus.PARTIALLY_PAID
+    booking.save(update_fields=["paid_amount", "payment_status"])
+    messages.success(request, "Advance payment captured successfully.")
     return redirect("booking-history")
 
 

@@ -6,6 +6,10 @@
     #{{ booking.id }} - {{ booking.car.brand }} {{ booking.car.model }}
     <br>{{ booking.start_datetime }} to {{ booking.end_datetime }}
     <br>Status: {{ booking.status }} | Total: Rs. {{ booking.total_amount }}
+    <br>Payment: {{ booking.payment_status }} | Advance: Rs. {{ booking.advance_amount }} | Paid: Rs. {{ booking.paid_amount }} | Refund: Rs. {{ booking.refund_amount }}
+    {% if booking.payment_status == 'unpaid' and booking.payment %}
+    <br><a href="{% url 'booking-payment-success' booking.id %}?razorpay_payment_id=demo_payment_{{ booking.id }}&razorpay_signature=demo_signature" class="btn btn-sm btn-outline-success mt-2">Mark Advance Paid (Demo)</a>
+    {% endif %}
     {% if booking.status != 'cancelled' and booking.status != 'completed' %}
     <br><a href="{% url 'booking-cancel' booking.id %}" class="btn btn-sm btn-outline-danger mt-2">Cancel Booking</a>
     {% endif %}
